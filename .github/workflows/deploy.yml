@@ -18,8 +18,11 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.DOKKU_SSH_KEY }}
 
-      - name: Add dokku remote
-        run: git remote add dokku dokku@devops.s14.local:wordpress-app
+      - name: Check if dokku remote exists
+        run: |
+          if ! git remote get-url dokku; then
+            git remote add dokku dokku@devops.s14.local:wordpress-app
+          fi
 
       - name: Push to Dokku
         id: dokku-deploy
@@ -30,5 +33,3 @@ jobs:
             ssh -o StrictHostKeyChecking=no dokku@devops.s14.local "dokku releases:revert wordpress-app \$(dokku releases:list wordpress-app --no-truncate | sed -n '3p' | awk '{print \$1}')"
             exit 1
           fi
-
-    
