@@ -31,24 +31,4 @@ jobs:
             exit 1
           fi
 
-      - name: Notify Slack of successful deployment
-        if: success()
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            {
-              "text": ":rocket: Deployment to *Dokku* for *wordpress-app* on *devops.s14.local* was successful! :white_check_mark:"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-      - name: Notify Slack of failed deployment
-        if: failure()
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          payload: |
-            {
-              "text": ":x: Deployment to *Dokku* for *wordpress-app* FAILED on *devops.s14.local*! Check GitHub Actions logs. :warning:"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    
