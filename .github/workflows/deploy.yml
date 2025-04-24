@@ -1,0 +1,54 @@
+name: Deploy to Dokku
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.DOKKU_SSH_KEY }}
+
+      - name: Add dokku remote
+        run: git remote add dokku dokku@devops.s14.local:wordpress-app
+
+      - name: Push to Dokku
+        id: dokku-deploy
+        run: |
+          set -e
+          if ! git push dokku main; then
+            echo "Deployment failed! Rolling back to previous release..."
+            ssh -o StrictHostKeyChecking=no dokku@devops.s14.local "dokku releases:revert wordpress-app \$(dokku releases:list wordpress-app --no-truncate | sed -n '3p' | awk '{print \$1}')"
+            exit 1
+          fi
+
+      - name: Notify Slack of successful deployment
+        if: success()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": ":rocket: Deployment to *Dokku* for *wordpress-app* on *devops.s14.local* was successful! :white_check_mark:"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack of failed deployment
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": ":x: Deployment to *Dokku* for *wordpress-app* FAILED on *devops.s14.local*! Check GitHub Actions logs. :warning:"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
